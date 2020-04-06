@@ -1,8 +1,7 @@
 import sys
 from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler, MinMaxScaler
-
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler, MinMaxScaler, PolynomialFeatures
 
 import \
     pandas as pd
@@ -119,7 +118,15 @@ Target = ['SalePrice']
 
 data1.drop(1459,axis=0,inplace=True)
 
-X_train, X_test, y_train, y_test = train_test_split(data1.drop(['SalePrice'],axis=1,inplace=False), data1['SalePrice'],random_state = 0)
+
+
+data1y=data1['SalePrice']
+data1.drop(['SalePrice'],axis=1,inplace=True)
+
+poly = PolynomialFeatures(degree=2)
+data1 = poly.fit_transform(data1)
+
+X_train, X_test, y_train, y_test = train_test_split(data1, data1y,random_state = 0)
 
 print(X_train)
 print(X_test)
@@ -132,21 +139,27 @@ scaler = MinMaxScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
-linridge = Ridge(alpha=2.0).fit(X_train_scaled, y_train)
+linlasso = Lasso(alpha=200.0, max_iter = 10000).fit(X_train_scaled, y_train)
 
 print('Crime dataset')
-print('ridge regression linear model intercept: {}'
-     .format(linridge.intercept_))
-print('ridge regression linear model coeff:\n{}'
-     .format(linridge.coef_))
+print('lasso regression linear model intercept: {}'
+     .format(linlasso.intercept_))
+print('lasso regression linear model coeff:\n{}'
+     .format(linlasso.coef_))
+print('Non-zero features: {}'
+     .format(np.sum(linlasso.coef_ != 0)))
 print('R-squared score (training): {:.3f}'
-     .format(linridge.score(X_train_scaled, y_train)))
-print('R-squared score (test): {:.3f}'
-     .format(linridge.score(X_test_scaled, y_test)))
-print('Number of non-zero features: {}'
-     .format(np.sum(linridge.coef_ != 0)))
+     .format(linlasso.score(X_train_scaled, y_train)))
+print('R-squared score (test): {:.3f}\n'
+     .format(linlasso.score(X_test_scaled, y_test)))
+print('Features with non-zero weight (sorted by absolute magnitude):')
 """"
 data_val_scaled=scaler.transform(data_val)
-"""
 
+data_val['SalePrice'] = linlasso.predict(data_val_scaled)
+
+
+submit = data_val[['Id','SalePrice']]
+submit.to_csv("submit.csv", index=False)
+"""
 
